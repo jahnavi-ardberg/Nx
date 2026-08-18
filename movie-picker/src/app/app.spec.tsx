@@ -1,26 +1,50 @@
-import { render } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-
 import App from './app';
 
-describe('App', () => {
-  it('should render successfully', () => {
-    const { baseElement } = render(
+beforeEach(() => {
+  window.localStorage.clear();
+});
+
+describe('Movie Picker App', () => {
+  it('renders the picker and supports filtering', () => {
+    render(
       <BrowserRouter>
         <App />
       </BrowserRouter>,
     );
-    expect(baseElement).toBeTruthy();
+
+    expect(screen.getByRole('heading', { name: 'Movie Picker' })).toBeTruthy();
+    expect(screen.getByText(/Eligible movies:/i)).toBeTruthy();
+
+    const search = screen.getByLabelText('Search by title');
+    fireEvent.change(search, { target: { value: 'dune' } });
+
+    expect(screen.getByText(/Eligible movies: 1/i)).toBeTruthy();
   });
 
-  it('should have a greeting as the title', () => {
-    const { getAllByText } = render(
+  it('allows picking a movie and saving it to favorites', () => {
+    render(
       <BrowserRouter>
         <App />
       </BrowserRouter>,
     );
-    expect(
-      getAllByText(new RegExp('Welcome @org/movie-picker', 'gi')).length > 0,
-    ).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pick a movie' }));
+    const saveButton = screen.getByRole('button', { name: /save favorite/i });
+    fireEvent.click(saveButton);
+
+    expect(window.localStorage.getItem('movie-picker-favorites')).toContain('m');
+  });
+
+  it('shows an empty favorites state and allows navigation', () => {
+    render(
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>,
+    );
+
+    fireEvent.click(screen.getByRole('link', { name: 'Favorites' }));
+    expect(screen.getByText(/No favorites yet/i)).toBeTruthy();
   });
 });
